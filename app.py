@@ -22,6 +22,13 @@ if uploaded_file is not None:
         # Sheet တစ်ခုချင်းစီကို Loop ပတ်ပြီး ဖတ်မယ်
         for sheet in sheet_names:
             df = pd.read_excel(uploaded_file, sheet_name=sheet)
+            
+            # ✨ [Error ပြင်ဆင်ချက်] datetime column များပါက String (YYYY-MM-DD) ပုံစံသို့ ပြောင်းခြင်း
+            for col in df.columns:
+                if pd.api.types.is_datetime64_any_dtype(df[col]):
+                    # ရက်စွဲတွေကို စာသားအဖြစ် ပြောင်းလဲပေးပါတယ် (ဥပမာ - 2026-07-06)
+                    df[col] = df[col].dt.strftime('%Y-%m-%d')
+            
             df = df.fillna("") # အကွက်လွတ်တွေကို ရှင်းထုတ်
             combined_data[sheet] = df.to_dict(orient='records')
             
