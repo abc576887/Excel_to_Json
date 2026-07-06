@@ -5,13 +5,20 @@ import json
 # Web Page Title သတ်မှတ်ခြင်း
 st.set_page_config(page_title="Excel to Minified JSON Converter", page_icon="📊")
 
-# ✨ မြန်မာစာ Font (Pyidaungsu) ပိုလှပစေရန် CSS Styling ထည့်သွင်းခြင်း
+# ✨ Icon Error မတက်စေဘဲ မြန်မာစာလုံးဝမပျက်စေမယ့် CSS Styling စနစ်သစ်
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Pyidaungsu&display=swap');
+    /* မြန်မာ font ကို တိုက်ရိုက် တည်ငြိမ်တဲ့ ရင်းမြစ်ကနေ လှမ်းယူခြင်း */
+    @import url('https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&family=Pyidaungsu&display=swap');
     
-    html, body, [class*="css"], p, h1, h2, h3, h4, span, button {
-        font-family: 'Pyidaungsu', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    /* ရိုးရိုး စာသား area တွေကိုပဲ font ပြောင်းပြီး Streamlit ရဲ့ ကိုယ်ပိုင် Icon တွေကို မထိခိုက်အောင် ချန်လှပ်ထားခြင်း */
+    html, body, p, h1, h2, h3, h4, span, button, label, .stMarkdown {
+        font-family: 'Pyidaungsu', 'Padauk', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    }
+    
+    /* ✨ File Uploader အတွင်းရှိ Icon များနှင့် ခလုတ်များ လွဲချော်မှုမရှိစေရန် ကာကွယ်ခြင်း */
+    button svg, div svg, [data-testid="stFileUploaderIcon"] {
+        font-family: inherit !important;
     }
     </style>
     """, unsafe_allow_html=True)
