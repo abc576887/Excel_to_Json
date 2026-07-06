@@ -1,10 +1,21 @@
 import streamlit as st
 import pandas as pd
 import json
-from datetime import datetime
 
 # Web Page Title သတ်မှတ်ခြင်း
 st.set_page_config(page_title="Excel to Minified JSON Converter", page_icon="📊")
+
+# ✨ မြန်မာစာ Font (Pyidaungsu) ပိုလှပစေရန် CSS Styling ထည့်သွင်းခြင်း
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pyidaungsu&display=swap');
+    
+    html, body, [class*="css"], p, h1, h2, h3, h4, span, button {
+        font-family: 'Pyidaungsu', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 st.title("📊 Excel to Minified JSON Converter")
 st.write("Token သက်သာစေမယ့် Minified JSON Format သို့ အလွယ်တကူ ပြောင်းလဲပါ။")
 
@@ -35,9 +46,8 @@ if uploaded_file is not None:
         else:
             final_json_data = combined_data
             
-        # ✨ [အဓိက Error ဖြေရှင်းချက်]
-        # json.dumps ထဲမှာ default=str ကို ထည့်ပေးလိုက်ခြင်းအားဖြင့် 
-        # ဘယ်လို Datetime Object မျိုးပဲဖြစ်ဖြစ် မပြောင်းလဲနိုင်တာတွေ့ရင် String အဖြစ် အလိုအလျောက် အကုန်ပြောင်းပေးသွားမှာပါ
+        # json.dumps ထဲမှာ ensure_ascii=False ထည့်ထားခြင်းက မြန်မာစာလုံးဝမပျက်အောင် ထိန်းပေးပါတယ်
+        # default=str က ရက်စွဲ error တွေကို ဖြေရှင်းပေးပါတယ်
         json_string = json.dumps(
             final_json_data, 
             ensure_ascii=False, 
