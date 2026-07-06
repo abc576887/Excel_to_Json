@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import json
+from datetime import datetime
 
 # Web Page Title သတ်မှတ်ခြင်း
 st.set_page_config(page_title="Excel to Minified JSON Converter", page_icon="📊")
@@ -23,13 +24,9 @@ if uploaded_file is not None:
         for sheet in sheet_names:
             df = pd.read_excel(uploaded_file, sheet_name=sheet)
             
-            # ✨ [Error ပြင်ဆင်ချက်] datetime column များပါက String (YYYY-MM-DD) ပုံစံသို့ ပြောင်းခြင်း
-            for col in df.columns:
-                if pd.api.types.is_datetime64_any_dtype(df[col]):
-                    # ရက်စွဲတွေကို စာသားအဖြစ် ပြောင်းလဲပေးပါတယ် (ဥပမာ - 2026-07-06)
-                    df[col] = df[col].dt.strftime('%Y-%m-%d')
+            # အကွက်လွတ် (NaN/NaT) တွေကို စာသားအလွတ် "" အဖြစ် အရင်ပြောင်း
+            df = df.fillna("") 
             
-            df = df.fillna("") # အကွက်လွတ်တွေကို ရှင်းထုတ်
             combined_data[sheet] = df.to_dict(orient='records')
             
         # Sheet တစ်ခုတည်းပဲ ပါရင် စာသားပိုကျစ်လျစ်အောင် ပတ်ထားတဲ့ Sheet Name Key ကို ဖြုတ်ပေးမယ်
@@ -38,8 +35,15 @@ if uploaded_file is not None:
         else:
             final_json_data = combined_data
             
-        # JSON ကို Space တွေ ဖြုတ်ပြီး Minified ပုံစံ String ပြောင်းခြင်း
-        json_string = json.dumps(final_json_data, ensure_ascii=False, separators=(',', ':'))
+        # ✨ [အဓိက Error ဖြေရှင်းချက်]
+        # json.dumps ထဲမှာ default=str ကို ထည့်ပေးလိုက်ခြင်းအားဖြင့် 
+        # ဘယ်လို Datetime Object မျိုးပဲဖြစ်ဖြစ် မပြောင်းလဲနိုင်တာတွေ့ရင် String အဖြစ် အလိုအလျောက် အကုန်ပြောင်းပေးသွားမှာပါ
+        json_string = json.dumps(
+            final_json_data, 
+            ensure_ascii=False, 
+            separators=(',', ':'),
+            default=str
+        )
         
         st.success(f"🎉 ပြောင်းလဲခြင်း အောင်မြင်ပါသည်။ (Sheet ပေါင်း {len(sheet_names)} ခု ပါဝင်သည်)")
         
