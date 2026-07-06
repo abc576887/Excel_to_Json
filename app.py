@@ -1,30 +1,29 @@
 import streamlit as st
 import pandas as pd
 import json
+import io
+import zipfile
 
 # Web Page Title သတ်မှတ်ခြင်း
-st.set_page_config(page_title="Excel to Minified JSON Converter", page_icon="📊")
+st.set_page_config(page_title="Excel to Separate JSONs Converter", page_icon="📊")
 
 # ✨ Icon Error မတက်စေဘဲ မြန်မာစာလုံးဝမပျက်စေမယ့် CSS Styling စနစ်သစ်
 st.markdown("""
     <style>
-    /* မြန်မာ font ကို တိုက်ရိုက် တည်ငြိမ်တဲ့ ရင်းမြစ်ကနေ လှမ်းယူခြင်း */
     @import url('https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&family=Pyidaungsu&display=swap');
     
-    /* ရိုးရိုး စာသား area တွေကိုပဲ font ပြောင်းပြီး Streamlit ရဲ့ ကိုယ်ပိုင် Icon တွေကို မထိခိုက်အောင် ချန်လှပ်ထားခြင်း */
     html, body, p, h1, h2, h3, h4, span, button, label, .stMarkdown {
         font-family: 'Pyidaungsu', 'Padauk', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
     }
     
-    /* ✨ File Uploader အတွင်းရှိ Icon များနှင့် ခလုတ်များ လွဲချော်မှုမရှိစေရန် ကာကွယ်ခြင်း */
     button svg, div svg, [data-testid="stFileUploaderIcon"] {
         font-family: inherit !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("📊 Excel to Minified JSON Converter")
-st.write("Token သက်သာစေမယ့် Minified JSON Format သို့ အလွယ်တကူ ပြောင်းလဲပါ။")
+st.title("📊 Excel to Sheet-by-Sheet JSON Converter")
+st.write("Excel Sheet တစ်ခုချင်းစီကို JSON ဖိုင်သီးသန့်ခွဲထုတ်ပြီး ZIP အဖြစ် ဒေါင်းလုဒ်ရယူပါ။")
 
 # File Uploader ထည့်ခြင်း
 uploaded_file = st.file_uploader("Excel ဖိုင်တင်ရန် (.xlsx)", type=["xlsx"])
@@ -35,45 +34,45 @@ if uploaded_file is not None:
         excel_file = pd.ExcelFile(uploaded_file)
         sheet_names = excel_file.sheet_names
         
-        # Sheet အားလုံးကို သိမ်းမယ့် Dictionary
-        combined_data = {}
+        # Memory ပေါ်မှာတင် ZIP file အလွတ်တစ်ခု ဖန်တီးခြင်း
+        zip_buffer = io.BytesIO()
         
-        # Sheet တစ်ခုချင်းစီကို Loop ပတ်ပြီး ဖတ်မယ်
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+            # Sheet တစ်ခုချင်းစီကို ပတ်ဖတ်ပြီး JSON သီးသန့်စီ ပြောင်းမယ်
+            for sheet in sheet_names:
+                df = pd.read_excel(uploaded_file, sheet_name=sheet)
+                df = df.fillna("") # အကွက်လွတ်များကို ရှင်းထုတ်
+                
+                sheet_data = df.to_dict(orient='records')
+                
+                # Minified JSON string အဖြစ် ပြောင်းလဲခြင်း
+                json_string = json.dumps(
+                    sheet_data, 
+                    ensure_ascii=False, 
+                    separators=(',', ':'),
+                    default=str
+                )
+                
+                # Sheet နာမည်အတိုင်း .json ဖိုင်ဆောက်ပြီး ZIP ထဲသို့ ထည့်ခြင်း
+                filename = f"{sheet}.json"
+                zip_file.writestr(filename, json_string)
+                
+        # Buffer position ကို အစသို့ ပြန်ရွှေ့ခြင်း
+        zip_buffer.seek(0)
+        
+        st.success(f"🎉 JSON ခွဲထုတ်ခြင်း အောင်မြင်ပါသည်။ Sheet ပေါင်း {len(sheet_names)} ခုကို ဖိုင်သီးသန့်စီ ခွဲပေးထားပါသည်။")
+        
+        # Display sheet names that will be inside the ZIP
+        st.write("📁 **ZIP ဖိုင်ထဲတွင် ပါဝင်မည့် ဖိုင်များ:**")
         for sheet in sheet_names:
-            df = pd.read_excel(uploaded_file, sheet_name=sheet)
+            st.write(f"📄 `{sheet}.json`")
             
-            # အကွက်လွတ် (NaN/NaT) တွေကို စာသားအလွတ် "" အဖြစ် အရင်ပြောင်း
-            df = df.fillna("") 
-            
-            combined_data[sheet] = df.to_dict(orient='records')
-            
-        # Sheet တစ်ခုတည်းပဲ ပါရင် စာသားပိုကျစ်လျစ်အောင် ပတ်ထားတဲ့ Sheet Name Key ကို ဖြုတ်ပေးမယ်
-        if len(sheet_names) == 1:
-            final_json_data = combined_data[sheet_names[0]]
-        else:
-            final_json_data = combined_data
-            
-        # json.dumps ထဲမှာ ensure_ascii=False ထည့်ထားခြင်းက မြန်မာစာလုံးဝမပျက်အောင် ထိန်းပေးပါတယ်
-        # default=str က ရက်စွဲ error တွေကို ဖြေရှင်းပေးပါတယ်
-        json_string = json.dumps(
-            final_json_data, 
-            ensure_ascii=False, 
-            separators=(',', ':'),
-            default=str
-        )
-        
-        st.success(f"🎉 ပြောင်းလဲခြင်း အောင်မြင်ပါသည်။ (Sheet ပေါင်း {len(sheet_names)} ခု ပါဝင်သည်)")
-        
-        # ပြောင်းပြီးသား JSON ရဲ့ ပုံစံအကျဉ်းကို ပြပေးခြင်း
-        st.subheader("Preview (JSON ပုံစံအကျဉ်း):")
-        st.code(json_string[:500] + ("..." if len(json_string) > 500 else ""), language="json")
-        
-        # Download Button ပြုလုပ်ခြင်း
+        # ZIP file ကို Download ချမည့် ခလုတ်ပြုလုပ်ခြင်း
         st.download_button(
-            label="📥 Download Minified JSON",
-            data=json_string,
-            file_name="converted_data.json",
-            mime="application/json"
+            label="📥 Download All Sheets JSON (ZIP)",
+            data=zip_buffer,
+            file_name="excel_sheets_json.zip",
+            mime="application/zip"
         )
         
     except Exception as e:
